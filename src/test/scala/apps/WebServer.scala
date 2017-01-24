@@ -1,3 +1,5 @@
+package apps
+
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ContentTypes.`text/html(UTF-8)`
