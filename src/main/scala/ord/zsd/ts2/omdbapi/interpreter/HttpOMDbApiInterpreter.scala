@@ -19,6 +19,7 @@ import scala.collection.immutable.Seq
 
 object HttpOMDbApiInterpreter {
 
+  // could be shortened as a Lambda with kind projector
   def interpret: OMDbApiAction ~> Task = new (OMDbApiAction ~> Task) {
     override def apply[A](fa: OMDbApiAction[A]): Task[A] = {
       fa match {
