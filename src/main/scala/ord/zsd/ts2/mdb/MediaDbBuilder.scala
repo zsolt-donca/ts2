@@ -4,7 +4,7 @@ import ord.zsd.ts2.utils.UnapplyUtils.SomeInt
 
 object MediaDbBuilder {
 
-  def buildEpisode(entry: DiskEntry): Option[Episode] = {
+  def buildEpisode(path: MediaPath): List[EpisodeMedia] = {
 
     val flags = "(?i)"
     val releaserPrefix = "(\\w+-)?"
@@ -24,50 +24,50 @@ object MediaDbBuilder {
     val seasonTimesEpisode = s"$flags$title\\.(\\d+)x(\\d+)\\.(.*)".r
     val seasonSpaceEpisode = s"$flags(.+)$season$episode(.*)".r
 
-    entry.baseName match {
+    path.baseName match {
       case singleEpisode(titleDotted, SomeInt(seasonInt), SomeInt(episodeInt), _) =>
-        Some(Episode(normalizeTitle(titleDotted), seasonInt, SingleEpisode(episodeInt), entry))
+        List(EpisodeMedia(normalizeTitle(titleDotted), seasonInt, episodeInt, None, path))
 
       case doubleEpisode(titleDotted, SomeInt(seasonInt), SomeInt(episode1), SomeInt(episode2), _) =>
-        Some(Episode(normalizeTitle(titleDotted), seasonInt, DoubleEpisode(episode1, episode2), entry))
+        List(episode1, episode2).map(episode => EpisodeMedia(normalizeTitle(titleDotted), seasonInt, episode, None, path))
 
       case withPart(_, titleDotted, SomeInt(partNumber), _) =>
-        Some(Episode(normalizeTitle(titleDotted), season = 1, SingleEpisode(partNumber), entry))
+        List(EpisodeMedia(normalizeTitle(titleDotted), season = 1, episode = partNumber, None, path))
 
       case withEpisodeOnly(_, titleDotted, SomeInt(episodeInt), _) =>
-        Some(Episode(normalizeTitle(titleDotted), season = 1, SingleEpisode(episodeInt), entry))
+        List(EpisodeMedia(normalizeTitle(titleDotted), season = 1, episodeInt, None, path))
 
       case concatenatedEpisode(_, titleDotted, SomeInt(seasonAndEpisode), _*) =>
-        Some(Episode(normalizeTitle(titleDotted), season = seasonAndEpisode / 100, SingleEpisode(seasonAndEpisode % 100), entry))
+        List(EpisodeMedia(normalizeTitle(titleDotted), season = seasonAndEpisode / 100, episode = seasonAndEpisode % 100, None, path))
 
       case seasonDashEpisode(titleDotted, SomeInt(seasonInt), SomeInt(episodeInt), _*) =>
-        Some(Episode(normalizeTitle(titleDotted), seasonInt, SingleEpisode(episodeInt), entry))
+        List(EpisodeMedia(normalizeTitle(titleDotted), seasonInt, episodeInt, None, path))
 
       case seasonDashDoubleEpisode(titleDotted, SomeInt(seasonInt), SomeInt(episode1), SomeInt(episode2)) =>
-        Some(Episode(normalizeTitle(titleDotted), seasonInt, DoubleEpisode(episode1, episode2), entry))
+        List(episode1, episode2).map(episode => EpisodeMedia(normalizeTitle(titleDotted), seasonInt, episode, None, path))
 
       case seasonTimesEpisode(titleDotted, SomeInt(seasonInt), SomeInt(episodeInt), _*) =>
-        Some(Episode(normalizeTitle(titleDotted), seasonInt, SingleEpisode(episodeInt), entry))
+        List(EpisodeMedia(normalizeTitle(titleDotted), seasonInt, episodeInt, None, path))
 
       case seasonSpaceEpisode(titleStr, SomeInt(seasonInt), SomeInt(episodeInt), _*) =>
-        Some(Episode(normalizeTitle(titleStr), seasonInt, SingleEpisode(episodeInt), entry))
+        List(EpisodeMedia(normalizeTitle(titleStr), seasonInt, episodeInt, None, path))
 
       case _ =>
-        None
+        List()
     }
   }
 
-  def isTargetedFile(entry: DiskEntry): Boolean = isMediaFile(entry) && !isSample(entry)
+  def isTargetedFile(entry: MediaPath): Boolean = isMediaFile(entry) && !isSample(entry)
 
   private def normalizeTitle(titleDotted: String): String = {
     titleDotted.split("[\\. ]").filter(_.nonEmpty).map(_.capitalize).mkString(" ")
   }
 
-  private def isMediaFile(entry: DiskEntry): Boolean = {
+  private def isMediaFile(entry: MediaPath): Boolean = {
     entry.isFile && entry.extension.exists(ext => Set(".mkv", ".avi", ".mp4").contains(ext))
   }
 
-  private def isSample(entry: DiskEntry): Boolean = {
+  private def isSample(entry: MediaPath): Boolean = {
     entry.baseName.startsWith("sample-") || entry.baseName.endsWith(".sample")
   }
 }

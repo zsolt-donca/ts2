@@ -1,26 +1,33 @@
 package ord.zsd.ts2.mdb
 
-import java.net.URI
+import ord.zsd.ts2.omdbapi.{MediaDetails, MediaType}
+import org.atnos.eff.|=
 
-sealed trait EpisodePosition
-case class SingleEpisode(episode: Int) extends EpisodePosition
-case class DoubleEpisode(episode1: Int, episode2: Int) extends EpisodePosition
+trait Media
 
-case class Episode(seriesTitle: String,
-                   season: Int,
-                   episode: EpisodePosition,
-                   path: DiskEntry)
+case class SeriesMedia(title: String,
+                       details: Option[MediaDetails]) extends Media
 
-case class Details(imdbId: String,
-                   title: String,
-                   year: (Int, Option[Int]),
-                   genre: Seq[String],
-                   plot: String,
-                   poster: URI,
-                   imdbRating: Double,
-                   totalSeasons: Option[Int])
+case class EpisodeMedia(seriesTitle: String,
+                        season: Int,
+                        episode: Int,
+                        details: Option[MediaDetails],
+                        path: MediaPath) extends Media
 
-case class Series(details: Details,
-                  episodes: Seq[Episode])
+case class MovieMedia(title: String,
+                      details: Option[MediaDetails],
+                      path: MediaPath) extends Media
 
-case class MediaDb(series: Seq[Series])
+trait MediaDbOp[A]
+case class SaveEntry(mediaCollectionEntry: Media) extends MediaDbOp[Long]
+case class DeleteEntry(id: Long) extends MediaDbOp[Boolean]
+
+case class FindEntryById(id: Long) extends MediaDbOp[Option[Media]]
+case class FindEntryByTitle(title: String, mediaType: MediaType) extends MediaDbOp[Option[Media]]
+case class FindAllEntries() extends MediaDbOp[List[Media]]
+
+case class DeleteEntriesByPath(path: MediaPath) extends MediaDbOp[Int]
+
+object MediaDbOp {
+  type _mediaDbOp[T] = MediaDbOp |= T
+}

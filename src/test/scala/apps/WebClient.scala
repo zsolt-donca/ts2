@@ -12,8 +12,8 @@ import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
-import ord.zsd.ts2.omdbapi.FindResponse
-import ord.zsd.ts2.omdbapi.interpreter.OMDbApiJsonProtocol._
+import ord.zsd.ts2.omdbapi.OMDbOp.FindResponse
+import ord.zsd.ts2.interpreter.omdb.OMDbApiJsonProtocol._
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}

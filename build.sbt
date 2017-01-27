@@ -27,6 +27,7 @@ libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.4" % "test"
 
 addCompilerPlugin("org.spire-math" %% "kind-projector" % "0.9.3")
 
+scalacOptions += "-Ypartial-unification"
 
 resolvers ++= Seq(
   Resolver.sonatypeRepo("releases"),

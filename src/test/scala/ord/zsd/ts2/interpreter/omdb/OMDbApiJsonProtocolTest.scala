@@ -1,7 +1,7 @@
-package org.zsd.ts2.omdbapi.interpreter
+package ord.zsd.ts2.interpreter.omdb
 
+import ord.zsd.ts2.omdbapi.OMDbOp.FindResponse
 import ord.zsd.ts2.omdbapi._
-import ord.zsd.ts2.omdbapi.interpreter.OMDbApiJsonProtocol
 import org.scalatest.FunSuite
 import spray.json.{jsonReader, pimpString}
 
@@ -36,7 +36,7 @@ class OMDbApiJsonProtocolTest extends FunSuite {
         |""".stripMargin.parseJson
 
     val response = jsonReader[FindResponse].read(json)
-    val expected = FindResult(
+    val expected = Right(MediaDetails(
       title = "Terminator",
       year = "2001",
       rated = None,
@@ -57,7 +57,7 @@ class OMDbApiJsonProtocolTest extends FunSuite {
       imdbId = "tt1994570",
       mediaType = MovieType,
       typeSpecifics = MovieSpecifics
-    )
+    ))
 
     assert(response == expected)
   }
@@ -89,7 +89,7 @@ class OMDbApiJsonProtocolTest extends FunSuite {
         |""".stripMargin.parseJson
 
     val response = jsonReader[FindResponse].read(json)
-    val expected = FindResult(
+    val expected = Right(MediaDetails(
       title = "The Shawshank Redemption",
       year = "1994",
       rated = Some("R"),
@@ -110,7 +110,7 @@ class OMDbApiJsonProtocolTest extends FunSuite {
       imdbId = "tt0111161",
       mediaType = MovieType,
       typeSpecifics = MovieSpecifics
-    )
+    ))
 
     assert(response == expected)
   }
@@ -143,7 +143,7 @@ class OMDbApiJsonProtocolTest extends FunSuite {
         |""".stripMargin.parseJson
 
     val response = jsonReader[FindResponse].read(json)
-    val expected = FindResult(
+    val expected = Right(MediaDetails(
       title = "Westworld",
       year = "2016–",
       rated = Some("TV-MA"),
@@ -164,7 +164,7 @@ class OMDbApiJsonProtocolTest extends FunSuite {
       imdbId = "tt0475784",
       mediaType = SeriesType,
       typeSpecifics = SeriesSpecifics(2)
-    )
+    ))
 
     assert(response == expected)
   }
@@ -200,7 +200,7 @@ class OMDbApiJsonProtocolTest extends FunSuite {
       """.stripMargin.parseJson
 
     val response = jsonReader[FindResponse].read(json)
-    val expected = FindResult(
+    val expected = Right(MediaDetails(
       title = "Battle of the Bastards",
       year = "2016",
       rated = Some("TV-MA"),
@@ -221,7 +221,7 @@ class OMDbApiJsonProtocolTest extends FunSuite {
       imdbId = "tt4283088",
       mediaType = EpisodeType,
       typeSpecifics = EpisodeSpecifics(6, 9, "tt0944947")
-    )
+    ))
 
     assert(response == expected)
   }

@@ -1,8 +1,6 @@
 package ord.zsd.ts2.mdb
 
-import cats.{Eq, Show}
-
-case class DiskEntry(path: String, isFolder: Boolean) {
+case class MediaPath(path: String, isFolder: Boolean) {
   val pathParts: Seq[String] = path.split('/').toVector
 
   val name: String = pathParts.lastOption.getOrElse("")
@@ -20,13 +18,8 @@ case class DiskEntry(path: String, isFolder: Boolean) {
   def isFile: Boolean = !isFolder
 }
 
-object DiskEntry {
+object MediaPath {
+  def file(path: String): MediaPath = MediaPath(path, isFolder = false)
 
-  def file(path: String): DiskEntry = DiskEntry(path, isFolder = false)
-
-  def folder(path: String): DiskEntry = DiskEntry(path, isFolder = true)
-
-  implicit val show: Show[DiskEntry] = Show.fromToString[DiskEntry]
-
-  implicit val eq: Eq[DiskEntry] = Eq.fromUniversalEquals[DiskEntry]
+  def folder(path: String): MediaPath = MediaPath(path, isFolder = true)
 }

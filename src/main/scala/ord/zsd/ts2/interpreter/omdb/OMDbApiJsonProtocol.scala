@@ -1,5 +1,6 @@
-package ord.zsd.ts2.omdbapi.interpreter
+package ord.zsd.ts2.interpreter.omdb
 
+import ord.zsd.ts2.omdbapi.OMDbOp.FindResponse
 import ord.zsd.ts2.omdbapi._
 import ord.zsd.ts2.utils.UnapplyUtils.SomeInt
 import spray.json.{DefaultJsonProtocol, JsNull, JsNumber, JsObject, JsString, JsValue, RootJsonReader, deserializationError}
@@ -11,8 +12,8 @@ object OMDbApiJsonProtocol extends DefaultJsonProtocol {
       json match {
         case jsObject: JsObject =>
           jsObject.fields.get("Response") match {
-            case Some(JsString("True")) => deserializeSuccessResponse(jsObject)
-            case Some(JsString("False")) => deserializeErrorResponse(jsObject)
+            case Some(JsString("True")) => Right(deserializeSuccessResponse(jsObject))
+            case Some(JsString("False")) => Left(deserializeErrorResponse(jsObject))
             case _ => deserializationError("Object does not have a valid 'Response' field: " + jsObject)
           }
         case _ => deserializationError("Expected an object, but got: " + json)
@@ -20,7 +21,7 @@ object OMDbApiJsonProtocol extends DefaultJsonProtocol {
     }
   }
 
-  private def deserializeSuccessResponse(jsObject: JsObject): FindResult = {
+  private def deserializeSuccessResponse(jsObject: JsObject): MediaDetails = {
     val fields = jsObject.fields
 
     def mandatoryStringField(field: String): String = fields.get(field) match {
@@ -58,7 +59,7 @@ object OMDbApiJsonProtocol extends DefaultJsonProtocol {
       .getOrElse(Vector())
 
     val mediaType = mandatoryEnumField("Type", Map("movie" -> MovieType, "series" -> SeriesType, "episode" -> EpisodeType))
-    FindResult(
+    MediaDetails(
       title = mandatoryStringField("Title"),
       imdbId = mandatoryStringField("imdbID"),
       mediaType = mediaType,
@@ -88,8 +89,8 @@ object OMDbApiJsonProtocol extends DefaultJsonProtocol {
     )
   }
 
-  private def deserializeErrorResponse(jsObject: JsObject): ErrorResult = jsObject.fields.get("Error") match {
-    case Some(JsString(message)) => ErrorResult(message)
+  private def deserializeErrorResponse(jsObject: JsObject): String = jsObject.fields.get("Error") match {
+    case Some(JsString(message)) => message
     case _ => deserializationError(s"Object does not have an 'Error' field with string type: $jsObject")
   }
 

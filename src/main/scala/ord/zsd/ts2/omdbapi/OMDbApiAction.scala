@@ -1,12 +1,13 @@
 package ord.zsd.ts2.omdbapi
 
-import cats.free.Free
-
-sealed trait OMDbApiAction[ResultType]
+import ord.zsd.ts2.omdbapi.OMDbOp.FindResponse
+import org.atnos.eff.|=
 
 sealed trait FindType
-case class FindById(imdbId: String) extends FindType
-case class FindByTitle(title: String) extends FindType
+case class ById(imdbId: String) extends FindType
+case class MovieByTitle(title: String) extends FindType
+case class SeriesByTitle(title: String) extends FindType
+case class EpisodeByTitle(seriesTitle: String, season: Int, episode: Int) extends FindType
 
 sealed trait MediaType
 case object MovieType extends MediaType
@@ -22,46 +23,40 @@ case object MovieSpecifics extends TypeSpecifics
 case class SeriesSpecifics(totalSeasons: Int) extends TypeSpecifics
 case class EpisodeSpecifics(season: Int,
                             episode: Int,
-                            seriesID: String) extends TypeSpecifics
+                            seriesId: String) extends TypeSpecifics
 
-sealed trait FindResponse extends Product
-case class FindResult(title: String,
-                      imdbId: String,
-                      mediaType: MediaType,
-                      year: String,
-                      rated: Option[String],
-                      released: Option[String],
-                      runtime: Option[String],
-                      genre: Seq[String],
-                      director: Seq[String],
-                      writer: Seq[String],
-                      actors: Seq[String],
-                      plot: Option[String],
-                      language: Option[String],
-                      country: Option[String],
-                      awards: Option[String],
-                      poster: Option[String],
-                      metascore: Option[String],
-                      imdbRating: Option[String],
-                      imdbVotes: Option[String],
-                      typeSpecifics: TypeSpecifics
-                     ) extends FindResponse
-case class ErrorResult(message: String) extends FindResponse
+case class MediaDetails(title: String,
+                        imdbId: String,
+                        mediaType: MediaType,
+                        year: String,
+                        rated: Option[String],
+                        released: Option[String],
+                        runtime: Option[String],
+                        genre: Seq[String],
+                        director: Seq[String],
+                        writer: Seq[String],
+                        actors: Seq[String],
+                        plot: Option[String],
+                        language: Option[String],
+                        country: Option[String],
+                        awards: Option[String],
+                        poster: Option[String],
+                        metascore: Option[String],
+                        imdbRating: Option[String],
+                        imdbVotes: Option[String],
+                        typeSpecifics: TypeSpecifics
+                       )
 
-case class FindMedia(findType: FindType,
-                     mediaType: Option[MediaType] = None,
-                     year: Option[Int] = None,
-                     plotType: PlotType = ShortPlot,
-                     tomatoesRating: Boolean = false) extends OMDbApiAction[FindResponse]
+trait OMDbOp[A]
+case class FindDetails(findType: FindType,
+                       mediaType: Option[MediaType] = None,
+                       year: Option[Int] = None,
+                       plotType: PlotType = ShortPlot,
+                       tomatoesRating: Boolean = false) extends OMDbOp[FindResponse]
 
-object FindMedia {
+object OMDbOp {
+  type _omdbOp[T] = OMDbOp |= T
 
-  type OMDbApiActionM[X] = Free[OMDbApiAction, X]
-
-  def findMedia(findType: FindType,
-                mediaType: Option[MediaType] = None,
-                year: Option[Int] = None,
-                plotType: PlotType = ShortPlot,
-                tomatoesRating: Boolean = false): OMDbApiActionM[FindResponse] = Free.liftF(FindMedia(findType, mediaType, year, plotType, tomatoesRating))
+  type FindResponse = Either[String, MediaDetails]
 
 }
