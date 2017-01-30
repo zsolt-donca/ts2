@@ -8,7 +8,7 @@ import ord.zsd.ts2.omdbapi._
 import ord.zsd.ts2.parse.ParseOp._parseOp
 import ord.zsd.ts2.parse.{ParseOp, ParseSeries}
 import org.atnos.eff._
-import all._
+import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
 import cats._
 import cats.syntax.all._
@@ -19,6 +19,8 @@ import ord.zsd.ts2.interpreter.mdb.StateMediaDbInterpreter
 import ord.zsd.ts2.interpreter.mdb.StateMediaDbInterpreter.MediaDbState
 import ord.zsd.ts2.interpreter.omdb.HttpOMDbApiInterpreter
 import ord.zsd.ts2.interpreter.parse.ParseInterpreter
+
+import scala.concurrent.Future
 
 object SeriesDbFlow {
 
@@ -108,7 +110,7 @@ object SeriesDbFlow {
     } yield ()
   }
 
-  type FinalStack = Fx.fx5[Eval, MediaDbState, Async, List, Logging]
+  type FinalStack = Fx.fx5[Eval, MediaDbState, Future, List, Logging]
 
   def runWithStandardInterpreters(folderChangedEvents: List[FolderChangedEvent]): Eff[FinalStack, List[Media]] = {
     type InitialStack = Fx.fx5[OMDbOp, MediaDbOp, ParseOp, List, Logging]

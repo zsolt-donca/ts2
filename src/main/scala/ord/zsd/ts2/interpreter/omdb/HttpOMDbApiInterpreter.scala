@@ -3,11 +3,11 @@ package ord.zsd.ts2.interpreter.omdb
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.client.RequestBuilding.Get
 import akka.http.scaladsl.model.MediaTypes.`application/json`
-import akka.http.scaladsl.model.Uri
+import akka.http.scaladsl.model.{HttpRequest, HttpResponse, Uri}
 import akka.http.scaladsl.model.Uri.Query
 import akka.http.scaladsl.model.headers.Accept
 import akka.http.scaladsl.unmarshalling.Unmarshal
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import cats.{Later, ~>}
 import monix.eval.Task
 import ord.zsd.ts2.Ts2System
@@ -23,29 +23,29 @@ import org.atnos.eff.syntax.all._
 import scala.collection.immutable.Seq
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object HttpOMDbApiInterpreter {
 
   import Ts2System._
 
-  private val connectionFlow = Http().outgoingConnection("www.omdbapi.com")
+  private val connectionFlow: Flow[HttpRequest, HttpResponse, Future[Http.OutgoingConnection]] = Http().outgoingConnection("www.omdbapi.com")
 
   // could be shortened as a Lambda with kind projector
-  def interpret: OMDbOp ~> Async = new (OMDbOp ~> Async) {
-    override def apply[A](fa: OMDbOp[A]): Async[A] = {
+  def interpret: OMDbOp ~> Future = new (OMDbOp ~> Future) {
+    override def apply[A](fa: OMDbOp[A]): Future[A] = {
       fa match {
         case findMedia: FindDetails =>
 
           val httpRequest = Get(Uri("/").withQuery(buildQuery(findMedia)))
             .withHeaders(Accept(`application/json`))
 
-          lazy val findResponseFuture: Future[FindResponse] = Source.single(httpRequest)
+          val findResponseFuture: Future[FindResponse] = Source.single(httpRequest)
             .via(connectionFlow)
             .runWith(Sink.head)
             .flatMap(httpResponse => Unmarshal(httpResponse).to[FindResponse])
 
-          lazy val result: FindResponse = Await.result(findResponseFuture, 10 seconds)
-          AsyncDelayed(Later(result))
+          findResponseFuture
       }
     }
   }
