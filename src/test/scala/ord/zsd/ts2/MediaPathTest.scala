@@ -1,6 +1,6 @@
 package ord.zsd.ts2
 
-import ord.zsd.ts2.mdb.MediaPath
+import ord.zsd.ts2.files.MediaPath
 import org.scalatest.FunSuite
 
 class MediaPathTest extends FunSuite {

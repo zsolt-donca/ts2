@@ -1,6 +1,7 @@
 package ord.zsd.ts2.interpreter.seriesdb
 
 import cats.data.Writer
+import ord.zsd.ts2.files.MediaPath
 import ord.zsd.ts2.mdb.MediaDbOp._mediaDbOp
 import ord.zsd.ts2.mdb._
 import ord.zsd.ts2.omdbapi.OMDbOp._omdbOp
@@ -21,8 +22,12 @@ object SeriesDbInterpreter {
                                        l: _list[U], w: _logging[U]): Eff[U, A] = {
     interpret.translate(e)(new Translate[SeriesDbOp, U] {
       def apply[X](ax: SeriesDbOp[X]): Eff[U, X] = ax match {
+
         case UpdateForFolderChanged(folderChanged) =>
           updateSeriesDbForEvent(folderChanged).asInstanceOf[Eff[U, X]] // should not be necessary
+
+        case ReadMediaDb() =>
+          send(FindAllEntries()).asInstanceOf[Eff[U, X]] // should not be necessary
       }
     })
   }

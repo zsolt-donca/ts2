@@ -1,4 +1,4 @@
-package ord.zsd.ts2.mdb
+package ord.zsd.ts2.files
 
 case class MediaPath(path: String, isFolder: Boolean) {
   val pathParts: Seq[String] = path.split('/').toVector

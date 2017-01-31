@@ -1,6 +1,7 @@
 package ord.zsd.ts2.seriesdb
 
-import ord.zsd.ts2.mdb.MediaPath
+import ord.zsd.ts2.files.MediaPath
+import ord.zsd.ts2.mdb.Media
 import org.atnos.eff.|=
 
 sealed trait SeriesDbOp[A]
@@ -16,3 +17,4 @@ case object Removed extends ChangeType
 case class FolderChanged(path: MediaPath, changeType: ChangeType)
 
 case class UpdateForFolderChanged(folderChanged: FolderChanged) extends SeriesDbOp[Unit]
+case class ReadMediaDb() extends SeriesDbOp[List[Media]]

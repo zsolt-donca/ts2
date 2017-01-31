@@ -1,6 +1,7 @@
 package ord.zsd.ts2.parse
 
-import ord.zsd.ts2.mdb.{EpisodeMedia, MediaPath, MovieMedia}
+import ord.zsd.ts2.files.MediaPath
+import ord.zsd.ts2.mdb.{EpisodeMedia, MovieMedia}
 import org.atnos.eff.|=
 
 trait ParseOp[A]

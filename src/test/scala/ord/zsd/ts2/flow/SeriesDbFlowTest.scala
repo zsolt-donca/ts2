@@ -5,9 +5,9 @@ import better.files.File
 import fommil.sjs.FamilyFormats._
 import ord.zsd.ts2.Ts2System._
 import ord.zsd.ts2.eff.future._
+import ord.zsd.ts2.files.MediaPath
 import ord.zsd.ts2.flow.SeriesDbFlow._
 import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter.MediaDb
-import ord.zsd.ts2.mdb.MediaPath
 import ord.zsd.ts2.seriesdb.{Added, FolderChanged}
 import org.atnos.eff._
 import org.atnos.eff.syntax.all._
