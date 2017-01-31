@@ -1,4 +1,4 @@
-package org.zsd.ts2.mdb
+package ord.zsd.ts2.mdb
 
 import ord.zsd.ts2.mdb._
 import org.scalatest.FunSuite

@@ -1,4 +1,4 @@
-package org.zsd.ts2
+package ord.zsd.ts2
 
 import ord.zsd.ts2.mdb.MediaPath
 import org.scalatest.FunSuite
