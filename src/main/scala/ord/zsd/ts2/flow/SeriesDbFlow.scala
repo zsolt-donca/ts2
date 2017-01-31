@@ -2,9 +2,7 @@ package ord.zsd.ts2.flow
 
 import better.files.File
 import cats._
-import cats.data.{State, Writer, WriterT}
-import ord.zsd.ts2.interpreter.StoreOp
-import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter
+import cats.data.{State, Writer}
 import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter.{MediaDb, MediaDbStore, translateToStore}
 import ord.zsd.ts2.interpreter.omdb.HttpOMDbApiInterpreter
 import ord.zsd.ts2.interpreter.parse.ParseInterpreter
@@ -17,8 +15,8 @@ import ord.zsd.ts2.parse.ParseOp._parseOp
 import ord.zsd.ts2.parse.{ParseOp, ParseSeries}
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.atnos.eff.syntax.all._
 import org.atnos.eff.interpret._
+import org.atnos.eff.syntax.all._
 
 import scala.concurrent.Future
 
@@ -35,12 +33,11 @@ object SeriesDbFlow {
 
   // ---------------------------------------------------------------------------------------------------------------
 
-  def updateSeriesDbForEvents[R: _parseOp : _mediaDbOp : _omdbOp : _list : _logging](folderChangedEvents: List[FolderChangedEvent]): Eff[R, List[Media]] = {
+  def updateSeriesDbForEvents[R: _parseOp : _mediaDbOp : _omdbOp : _list : _logging](folderChangedEvents: List[FolderChangedEvent]): Eff[R, Unit] = {
     for {
-      folderChangedEvent <- values(folderChangedEvents: _*)
+      folderChangedEvent <- fromList(folderChangedEvents)
       _ <- updateSeriesDbForEvent(folderChangedEvent)
-      medias <- send[MediaDbOp, R, List[Media]](FindAllEntries())
-    } yield medias
+    } yield ()
   }
 
   def updateSeriesDbForEvent[R: _parseOp : _mediaDbOp : _omdbOp : _list : _logging](folderChangedEvent: FolderChangedEvent): Eff[R, Unit] = {
@@ -57,25 +54,11 @@ object SeriesDbFlow {
       _ <- tell(s"Adding $path to the DB.")
 
       episodes <- send(ParseSeries(path))
+      _ <- tell(s"Parsing $path was ${if (episodes.nonEmpty) s"successful: $episodes" else "failed"}.")
 
-      _ <- tell(s"Parsing $path was ${if (episodes.nonEmpty) "successful" else "failed"}.")
-
-      episode <- values(episodes: _*)
-
-      seriesTitle = episode.seriesTitle
-
-      _ <- tell(s"Episode is: $episode")
-
-      _ <- addSeriesToDbIfNeeded(seriesTitle)
-
-      findResponse <- send(FindDetails(EpisodeByTitle(seriesTitle, episode.season, episode.episode)))
-
-      _ <- findResponse match {
-        case Left(error) => tell(s"Details of the episode $episode could not be obtained: $error")
-        case Right(mediaDetails) => tell(s"Details of episode $episode are: $mediaDetails")
-      }
-
-      _ <- send(SaveEntry(episode.copy(details = findResponse.toOption)))
+      episode <- fromList(episodes)
+      _ <- addSeriesToDbIfNeeded(episode.seriesTitle)
+      _ <- addEpisodeToDb(episode)
     } yield ()
   }
 
@@ -88,7 +71,6 @@ object SeriesDbFlow {
           _ <- tell(s"Series titled $seriesTitle is unknown.")
 
           findResponse <- send(FindDetails(SeriesByTitle(seriesTitle), Some(SeriesType)))
-
           _ <- findResponse match {
             case Left(error) => tell(s"Details of series titled $seriesTitle could not be obtained: $error")
             case Right(mediaDetails) => tell(s"Details of series titled $seriesTitle are: $mediaDetails")
@@ -103,6 +85,18 @@ object SeriesDbFlow {
     } yield ()
   }
 
+  def addEpisodeToDb[R: _mediaDbOp : _omdbOp : _logging](episode: EpisodeMedia): Eff[R, Unit] = {
+    for {
+      findResponse <- send(FindDetails(EpisodeByTitle(episode.seriesTitle, episode.season, episode.episode)))
+      _ <- findResponse match {
+        case Left(error) => tell(s"Details of the episode $episode could not be obtained: $error")
+        case Right(mediaDetails) => tell(s"Details of episode $episode are: $mediaDetails")
+      }
+
+      _ <- send(SaveEntry(episode.copy(details = findResponse.toOption)))
+    } yield ()
+  }
+
   def removeFromDb[R: _mediaDbOp : _logging](path: MediaPath): Eff[R, Unit] = {
     for {
       _ <- tell(s"Removing path from DB: $path")
@@ -111,7 +105,8 @@ object SeriesDbFlow {
   }
 
   type Stack1 = Fx.fx5[Eval, State[MediaDb, ?], Future, List, Logging]
-  def run1(folderChangedEvents: List[FolderChangedEvent]): Eff[Stack1, List[Media]] = {
+
+  def run1(folderChangedEvents: List[FolderChangedEvent]): Eff[Stack1, Unit] = {
 
     type InitialStack = Fx.fx6[OMDbOp, MediaDbOp, MediaDbStore, ParseOp, List, Logging]
     val initialEff = updateSeriesDbForEvents[InitialStack](folderChangedEvents)
@@ -123,10 +118,11 @@ object SeriesDbFlow {
   }
 
   type Stack2 = Fx.fx4[Future, Eval, List, Logging]
-  def run2(folderChangedEvents: List[FolderChangedEvent])(path: File)(empty: MediaDb): Eff[Stack2, List[Media]] = {
 
-    import ord.zsd.ts2.eff._
+  def run2(folderChangedEvents: List[FolderChangedEvent])(path: File)(empty: MediaDb): Eff[Stack2, Unit] = {
+
     import fommil.sjs.FamilyFormats._
+    import ord.zsd.ts2.eff._
 
     type InitialStack = Fx.fx7[OMDbOp, MediaDbOp, MediaDbStore, Eval, ParseOp, List, Logging]
     val initialEff = updateSeriesDbForEvents[InitialStack](folderChangedEvents)

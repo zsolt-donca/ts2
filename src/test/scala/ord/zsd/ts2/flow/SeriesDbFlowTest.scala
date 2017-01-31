@@ -22,16 +22,11 @@ class SeriesDbFlowTest extends FunSuite {
   val paths = List("american.horror.story.s01e02.repack.720p.bluray.x264-demand.mkv", "The.Night.Of.Part.6.1080i.HDTV.H.264.HUN-nIk.mkv")
 
   test("Simple stuff - in-memory db") {
-    val res: Eff[Stack1, List[Media]] = SeriesDbFlow.run1(folderChangedEvents)
+    val res: Eff[Stack1, Unit] = SeriesDbFlow.run1(folderChangedEvents)
 
-    val (list: List[List[Media]], mediaDb: MediaDb) = res.runEval.runList.runState(MediaDb.empty).runWriterUnsafe[String](println(_)).runFuture(10 seconds).run
+    val (_, mediaDb: MediaDb) = res.runEval.runList.runState(MediaDb.empty).runWriterUnsafe[String](println(_)).runFuture(10 seconds).run
 
-    println(s"List: $list")
-    println(s"Flat list: ${list.flatten}")
     println(s"MediaDb: $mediaDb")
-
-    assert(list.size == 2)
-    assert(list.flatten.size == 6)
     assert(mediaDb.entries.size == 4)
   }
 
@@ -40,14 +35,9 @@ class SeriesDbFlowTest extends FunSuite {
     val jsonFile = File.newTemporaryFile(prefix = "ts2-test", suffix = "json")
 
     try {
-      val res: Eff[Stack2, List[Media]] = SeriesDbFlow.run2(folderChangedEvents)(jsonFile)(MediaDb.empty)
-      val list: List[List[Media]] = res.runEval.runList.runWriterUnsafe[String](println(_)).runFuture(10 seconds).run
+      val res: Eff[Stack2, Unit] = SeriesDbFlow.run2(folderChangedEvents)(jsonFile)(MediaDb.empty)
 
-      println(s"List: $list")
-      println(s"Flat list: ${list.flatten}")
-
-      assert(list.size == 2)
-      assert(list.flatten.size == 6)
+      res.runEval.runList.runWriterUnsafe[String](println(_)).runFuture(10 seconds).run
 
       assert(jsonFile.exists)
       val jsonStr = jsonFile.contentAsString
