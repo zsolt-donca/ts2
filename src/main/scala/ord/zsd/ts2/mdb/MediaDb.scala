@@ -3,7 +3,7 @@ package ord.zsd.ts2.mdb
 import ord.zsd.ts2.omdbapi.{MediaDetails, MediaType}
 import org.atnos.eff.|=
 
-trait Media
+sealed trait Media
 
 case class SeriesMedia(title: String,
                        details: Option[MediaDetails]) extends Media

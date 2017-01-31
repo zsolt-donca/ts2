@@ -76,7 +76,7 @@ object EffTransform2 extends App {
 
   // ---------------------------- translate ----------------------------
 
-  def translateD1[R, U, A](e: Eff[R, A])(implicit d2: Member.Aux[D1, R, U], eval: _eval[U]): Eff[U, A] = {
+  def translateD1[R, U, A](e: Eff[R, A])(implicit d1: Member.Aux[D1, R, U], eval: _eval[U]): Eff[U, A] = {
     translate(e)(new Translate[D1, U] {
       def apply[X](ax: D1[X]): Eff[U, X] =
         ax match {
@@ -98,12 +98,32 @@ object EffTransform2 extends App {
     })
   }
 
+  def translateD2_2[R: _eval]: Translate[D2, R] = {
+    new Translate[D2, R] {
+      def apply[X](ax: D2[X]): Eff[R, X] =
+        ax match {
+          case neg@Negate(value) =>
+            import neg.numeric._
+            send[Eval, R, X](Eval.now(-value))
+        }
+    }
+  }
 
   def testSquareAndNegateWithEvalTranslate1(): Unit = {
     type InitialStack = Fx.fx3[D1, D2, Eval]
     type FinalStack = Fx.fx1[Eval]
 
     val s: Eff[FinalStack, Int] = translateD2(translateD1(squareAndThenNegate[InitialStack, Int](7)))
+
+    val r: Int = s.runEval.run
+    println(r)
+  }
+
+  def testSquareAndNegateWithEvalTranslate1_2(): Unit = {
+    type InitialStack = Fx.fx3[D1, D2, Eval]
+    type FinalStack = Fx.fx1[Eval]
+
+    val s: Eff[FinalStack, Int] = translateD1(squareAndThenNegate[InitialStack, Int](7)).translate(translateD2_2)
 
     val r: Int = s.runEval.run
     println(r)

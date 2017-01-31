@@ -15,6 +15,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-http-spray-json" % "10.0.1"
 
 libraryDependencies += "com.github.melrief" %% "pureconfig" % "0.5.1"
 
+libraryDependencies += "com.github.fommil" %% "spray-json-shapeless" % "1.3.0"
+
 
 libraryDependencies += "com.github.pathikrit" %% "better-files" % "2.17.1"
 libraryDependencies += "com.github.pathikrit" %% "better-files-akka" % "2.17.1"

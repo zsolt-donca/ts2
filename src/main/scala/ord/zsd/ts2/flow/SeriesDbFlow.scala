@@ -1,6 +1,14 @@
 package ord.zsd.ts2.flow
 
-import cats.data.{StateT, Writer, WriterT}
+import better.files.File
+import cats._
+import cats.data.{State, Writer, WriterT}
+import ord.zsd.ts2.interpreter.StoreOp
+import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter
+import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter.{MediaDb, MediaDbStore, translateToStore}
+import ord.zsd.ts2.interpreter.omdb.HttpOMDbApiInterpreter
+import ord.zsd.ts2.interpreter.parse.ParseInterpreter
+import ord.zsd.ts2.interpreter.store.StoreInterpreter
 import ord.zsd.ts2.mdb.MediaDbOp._mediaDbOp
 import ord.zsd.ts2.mdb._
 import ord.zsd.ts2.omdbapi.OMDbOp._omdbOp
@@ -10,15 +18,7 @@ import ord.zsd.ts2.parse.{ParseOp, ParseSeries}
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
-import cats._
-import cats.syntax.all._
-import cats.instances.all._
-import cats.implicits._
-import monix.eval.Task
-import ord.zsd.ts2.interpreter.mdb.StateMediaDbInterpreter
-import ord.zsd.ts2.interpreter.mdb.StateMediaDbInterpreter.MediaDbState
-import ord.zsd.ts2.interpreter.omdb.HttpOMDbApiInterpreter
-import ord.zsd.ts2.interpreter.parse.ParseInterpreter
+import org.atnos.eff.interpret._
 
 import scala.concurrent.Future
 
@@ -110,14 +110,32 @@ object SeriesDbFlow {
     } yield ()
   }
 
-  type FinalStack = Fx.fx5[Eval, MediaDbState, Future, List, Logging]
+  type Stack1 = Fx.fx5[Eval, State[MediaDb, ?], Future, List, Logging]
+  def run1(folderChangedEvents: List[FolderChangedEvent]): Eff[Stack1, List[Media]] = {
 
-  def runWithStandardInterpreters(folderChangedEvents: List[FolderChangedEvent]): Eff[FinalStack, List[Media]] = {
-    type InitialStack = Fx.fx5[OMDbOp, MediaDbOp, ParseOp, List, Logging]
+    type InitialStack = Fx.fx6[OMDbOp, MediaDbOp, MediaDbStore, ParseOp, List, Logging]
+    val initialEff = updateSeriesDbForEvents[InitialStack](folderChangedEvents)
 
-    updateSeriesDbForEvents[InitialStack](folderChangedEvents)
+    translateToStore(initialEff)
       .transform(HttpOMDbApiInterpreter.interpret)
-      .transform(StateMediaDbInterpreter.interpret)
+      .transform(StoreInterpreter.interpretToState[MediaDb])
       .transform(ParseInterpreter.interpret)
+  }
+
+  type Stack2 = Fx.fx4[Future, Eval, List, Logging]
+  def run2(folderChangedEvents: List[FolderChangedEvent])(path: File)(empty: MediaDb): Eff[Stack2, List[Media]] = {
+
+    import ord.zsd.ts2.eff._
+    import fommil.sjs.FamilyFormats._
+
+    type InitialStack = Fx.fx7[OMDbOp, MediaDbOp, MediaDbStore, Eval, ParseOp, List, Logging]
+    val initialEff = updateSeriesDbForEvents[InitialStack](folderChangedEvents)
+
+    val step1 = translateToStore(initialEff)
+    val step2 = transmorph(step1)(StoreInterpreter.interpretToJsonFile[MediaDb](path)(empty))
+    val step3 = transmorph(step2)(ParseInterpreter.interpret)
+    val step4 = transform(step3, HttpOMDbApiInterpreter.interpret)
+
+    step4
   }
 }
