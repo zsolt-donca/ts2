@@ -1,12 +1,10 @@
 package ord.zsd.ts2.interpreter.mdb
 
-import ord.zsd.ts2.interpreter.StoreOp
-import ord.zsd.ts2.interpreter.StoreOp.{readStore, writeStore}
 import ord.zsd.ts2.mdb._
 import ord.zsd.ts2.omdbapi.{EpisodeType, MediaType, MovieType, SeriesType}
+import ord.zsd.ts2.store.StoreOp
+import ord.zsd.ts2.store.StoreOp.{readStore, writeStore}
 import org.atnos.eff._
-import org.atnos.eff.all._
-import org.atnos.eff.interpret._
 
 /*_*/
 object StoreMediaDbInterpreter {
@@ -20,9 +18,9 @@ object StoreMediaDbInterpreter {
   type MediaDbStore[A] = StoreOp[MediaDb, A]
   type _mediaDbStore[R] = MediaDbStore |= R
 
-  def translateToStore[R, U, A](e: Eff[R, A])(implicit member: Member.Aux[MediaDbOp, R, U],
-                                              mediaDbStore: _mediaDbStore[U]): Eff[U, A] = {
-    translate(e)(trans)
+  def translate[R, U, A](e: Eff[R, A])(implicit member: Member.Aux[MediaDbOp, R, U],
+                                       mediaDbStore: _mediaDbStore[U]): Eff[U, A] = {
+    interpret.translate(e)(trans)
   }
 
   private def trans[R: _mediaDbStore]: Translate[MediaDbOp, R] = new Translate[MediaDbOp, R] {

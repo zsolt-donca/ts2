@@ -1,8 +1,7 @@
-package ord.zsd.ts2.interpreter
+package ord.zsd.ts2.store
 
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.atnos.eff.syntax.all._
 
 import scala.language.higherKinds
 

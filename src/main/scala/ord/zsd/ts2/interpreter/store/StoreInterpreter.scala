@@ -3,7 +3,8 @@ package ord.zsd.ts2.interpreter.store
 import better.files.File
 import cats.data._
 import cats.{Eval, ~>}
-import ord.zsd.ts2.interpreter.{ReadStore, StoreOp, WriteStore}
+import ord.zsd.ts2.store.{ReadStore, WriteStore}
+import ord.zsd.ts2.store.StoreOp
 import spray.json._
 
 /*_*/
@@ -17,7 +18,7 @@ object StoreInterpreter {
     }
   }
 
-  def interpretToJsonFile[S: JsonFormat](path: File)(empty: S): StoreOp[S, ?] ~> Eval = new (StoreOp[S, ?] ~> Eval) {
+  def interpretToJsonFileEval[S: JsonFormat](path: File)(empty: S): StoreOp[S, ?] ~> Eval = new (StoreOp[S, ?] ~> Eval) {
     override def apply[A](fa: StoreOp[S, A]): Eval[A] = {
       fa match {
         case ReadStore() => Eval.later {
