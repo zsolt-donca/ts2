@@ -35,7 +35,8 @@ class SeriesDbFlowTest extends FunSuite {
     val jsonFile = File.newTemporaryFile(prefix = "ts2-test", suffix = "json")
 
     try {
-      val res = SeriesDbFlow.runWithDiskStore(folderChangedEvent)(jsonFile)(MediaDb.empty)
+      val program = send[SeriesDbOp, InitialStack, Unit](UpdateForFolderChanged(folderChangedEvent))
+      val res = SeriesDbFlow.runWithDiskStore(program)(jsonFile)(MediaDb.empty)
 
       res.runEval.runList.runWriterUnsafe[String](println(_)).runFuture(10 seconds).run
 

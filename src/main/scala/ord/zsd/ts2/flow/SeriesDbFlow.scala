@@ -39,13 +39,10 @@ object SeriesDbFlow {
   }
 
   //noinspection TypeAnnotation
-  def runWithDiskStore(folderChangedEvent: FolderChanged)(path: File)(empty: MediaDb) = {
+  def runWithDiskStore[A](program: Eff[InitialStack, A])(path: File)(empty: MediaDb) = {
 
-    import spray.json._
     import fommil.sjs.FamilyFormats._
     import ord.zsd.ts2.eff._
-
-    val program = send[SeriesDbOp, InitialStack, Unit](UpdateForFolderChanged(folderChangedEvent))
 
     val step1 = SeriesDbInterpreter.translate(program)
 
