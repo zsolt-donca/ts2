@@ -6,9 +6,8 @@ import akka.event.Logging
 import better.files.File
 import better.files.File.home
 import cats.Eval
-import ord.zsd.ts2.app.Ts2AppActor.{FolderChangedAction, SyncDb}
+import ord.zsd.ts2.app.Ts2AppActor.{FolderChangedAction, ReadAllMedia, SyncDb}
 import ord.zsd.ts2.flow.{SeriesDbFlow, SyncMediaDb}
-import ord.zsd.ts2.flow.SeriesDbFlow.Stack2
 import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter.{MediaDb, MediaDbStore}
 import ord.zsd.ts2.seriesdb.{FolderChanged, SeriesDbOp}
 import org.atnos.eff.Eff
@@ -45,6 +44,7 @@ class Ts2AppActor extends Actor {
   override def receive: Receive = {
 
     case SyncDb(seriesFolder) =>
+      import spray.json._
       import fommil.sjs.FamilyFormats._
 
       type InitialStack = Fx.fx9[FilesOp, SeriesDbOp, OMDbOp, MediaDbOp, MediaDbStore, Eval, ParseOp, List, Logging]
@@ -62,9 +62,12 @@ class Ts2AppActor extends Actor {
       step2.runEval.runList.runWriterUnsafe[String](log.info).runFuture(maxDuration).run
 
     case FolderChangedAction(folderChanged) =>
-      val eff: Eff[Stack2, Unit] = SeriesDbFlow.run2(folderChanged)(jsonFile)(MediaDb.empty)
+      val eff = SeriesDbFlow.runWithDiskStore(folderChanged)(jsonFile)(MediaDb.empty)
 
       eff.runEval.runList.runWriterUnsafe[String](log.info).runFuture(maxDuration).run
+
+    case ReadAllMedia =>
+
   }
 }
 
@@ -72,4 +75,5 @@ object Ts2AppActor {
   sealed trait Action
   case class SyncDb(seriesFolder: String) extends Action
   case class FolderChangedAction(folderChanged: FolderChanged) extends Action
+  case object ReadAllMedia extends Action
 }

@@ -7,6 +7,8 @@ import akka.http.scaladsl.model._
 import akka.http.scaladsl.server.Directives._
 import akka.stream.ActorMaterializer
 
+import scala.concurrent.Future
+
 object WebServer {
   def main(args: Array[String]) {
 
@@ -18,16 +20,20 @@ object WebServer {
     val route =
       path("hello") {
         get {
-          complete(HttpEntity(`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>"))
+          complete(Future(HttpEntity(`text/html(UTF-8)`, "<h1>Say hello to akka-http</h1>")))
         }
       }
 
     val bindingFuture = Http().bindAndHandle(route, "localhost", 8080)
 
-    Runtime.getRuntime.addShutdownHook(new Thread(() => {
-      bindingFuture
-        .flatMap(_.unbind()) // trigger unbinding from the port
-        .onComplete(_ => system.terminate()) // and shutdown when done
-    }))
+    Runtime.getRuntime.addShutdownHook(new Thread(
+      new Runnable {
+        override def run(): Unit = {
+          bindingFuture
+            .flatMap(_.unbind()) // trigger unbinding from the port
+            .onComplete(_ => system.terminate()) // and shutdown when done
+        }
+      }
+    ))
   }
 }

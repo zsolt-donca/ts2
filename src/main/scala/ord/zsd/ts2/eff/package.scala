@@ -21,7 +21,7 @@ package object eff {
     })
   }
 
-  implicit class TranslatePolyOps[R, A](val e: Eff[R, A]) extends AnyVal {
+  implicit class TransmorphOps[R, A](val e: Eff[R, A]) extends AnyVal {
     def transmorph[U, F[_], G[_]](interpret: F ~> G)(implicit m: Member.Aux[F, R, U], gu: G |= U): Eff[U, A] = {
       eff.transmorph(e)(interpret)
     }

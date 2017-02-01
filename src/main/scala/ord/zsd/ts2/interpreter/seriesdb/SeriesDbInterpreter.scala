@@ -1,5 +1,10 @@
 package ord.zsd.ts2.interpreter.seriesdb
 
+import cats._
+import cats.data._
+import cats.syntax._
+import cats.syntax.all._
+import cats.implicits._
 import cats.data.Writer
 import ord.zsd.ts2.files.MediaPath
 import ord.zsd.ts2.mdb.MediaDbOp._mediaDbOp
@@ -17,6 +22,9 @@ object SeriesDbInterpreter {
   type Logging[A] = Writer[String, A]
   type _logging[R] = Logging |= R
 
+  /**
+    * SeriesDbOp ~> [ParseOp, MediaDbOp, OMDbOp, List, Logging]
+    */
   def translate[R, U, A](e: Eff[R, A])(implicit member: Member.Aux[SeriesDbOp, R, U],
                                        p: _parseOp[U], m: _mediaDbOp[U], o: _omdbOp[U],
                                        l: _list[U], w: _logging[U]): Eff[U, A] = {
@@ -68,7 +76,7 @@ object SeriesDbInterpreter {
             case Right(mediaDetails) => tell(s"Details of series titled $seriesTitle are: $mediaDetails")
           }
 
-          _ <- send(SaveEntry(SeriesMedia(seriesTitle, findResponse.toOption)))
+          _ <- send(SaveEntry(SeriesMedia(seriesTitle, new EitherOps(findResponse).toOption)))
         } yield ()
       else
         for {
@@ -85,7 +93,7 @@ object SeriesDbInterpreter {
         case Right(mediaDetails) => tell(s"Details of episode $episode are: $mediaDetails")
       }
 
-      _ <- send(SaveEntry(episode.copy(details = findResponse.toOption)))
+      _ <- send(SaveEntry(episode.copy(details = new EitherOps(findResponse).toOption)))
     } yield ()
   }
 

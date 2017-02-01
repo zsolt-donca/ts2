@@ -2,7 +2,7 @@ package ord.zsd.ts2.flow
 
 import better.files.File
 import cats._
-import cats.data.State
+import cats.data.{State, WriterT}
 import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter
 import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter.{MediaDb, MediaDbStore}
 import ord.zsd.ts2.interpreter.omdb.HttpOMDbApiInterpreter
@@ -14,6 +14,7 @@ import ord.zsd.ts2.mdb._
 import ord.zsd.ts2.omdbapi._
 import ord.zsd.ts2.parse.ParseOp
 import ord.zsd.ts2.seriesdb._
+import ord.zsd.ts2.store.StoreOp
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.interpret._
@@ -25,13 +26,10 @@ object SeriesDbFlow {
 
   // ---------------------------------------------------------------------------------------------------------------
 
-  type Stack1 = Fx.fx5[Eval, State[MediaDb, ?], Future, List, Logging]
+  type InitialStack = Fx.fx7[SeriesDbOp, OMDbOp, MediaDbOp, MediaDbStore, ParseOp, List, Logging]
 
-  def run1(folderChangedEvent: FolderChanged): Eff[Stack1, Unit] = {
-
-    type InitialStack = Fx.fx7[SeriesDbOp, OMDbOp, MediaDbOp, MediaDbStore, ParseOp, List, Logging]
-    val program = send[SeriesDbOp, InitialStack, Unit](UpdateForFolderChanged(folderChangedEvent))
-
+  //noinspection TypeAnnotation
+  def runWithInMemoryStore(program: Eff[InitialStack, Unit]) = {
     val step1 = SeriesDbInterpreter.translate(program)
 
     StoreMediaDbInterpreter.translate(step1)
@@ -40,20 +38,19 @@ object SeriesDbFlow {
       .transform(ParseInterpreter.interpret)
   }
 
-  type Stack2 = Fx.fx4[Future, Eval, List, Logging]
+  //noinspection TypeAnnotation
+  def runWithDiskStore(folderChangedEvent: FolderChanged)(path: File)(empty: MediaDb) = {
 
-  def run2(folderChangedEvent: FolderChanged)(path: File)(empty: MediaDb): Eff[Stack2, Unit] = {
-
+    import spray.json._
     import fommil.sjs.FamilyFormats._
     import ord.zsd.ts2.eff._
 
-    type InitialStack = Fx.fx8[SeriesDbOp, OMDbOp, MediaDbOp, MediaDbStore, Eval, ParseOp, List, Logging]
     val program = send[SeriesDbOp, InitialStack, Unit](UpdateForFolderChanged(folderChangedEvent))
 
     val step1 = SeriesDbInterpreter.translate(program)
 
     StoreMediaDbInterpreter.translate(step1)
-      .transmorph(StoreInterpreter.interpretToJsonFileEval[MediaDb](path)(empty))
+      .transform(StoreInterpreter.interpretToJsonFileEval[MediaDb](path)(empty))
       .transmorph(ParseInterpreter.interpret)
       .transform(HttpOMDbApiInterpreter.interpret)
   }

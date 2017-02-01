@@ -8,8 +8,9 @@ import ord.zsd.ts2.eff.future._
 import ord.zsd.ts2.files.MediaPath
 import ord.zsd.ts2.flow.SeriesDbFlow._
 import ord.zsd.ts2.interpreter.mdb.StoreMediaDbInterpreter.MediaDb
-import ord.zsd.ts2.seriesdb.{Added, FolderChanged}
+import ord.zsd.ts2.seriesdb.{Added, FolderChanged, SeriesDbOp, UpdateForFolderChanged}
 import org.atnos.eff._
+import org.atnos.eff.all.send
 import org.atnos.eff.syntax.all._
 import org.scalatest.FunSuite
 import spray.json._
@@ -20,7 +21,8 @@ import scala.language.postfixOps
 
 class SeriesDbFlowTest extends FunSuite {
   test("Simple stuff - in-memory db") {
-    val res: Eff[Stack1, Unit] = SeriesDbFlow.run1(folderChangedEvent)
+    val program = send[SeriesDbOp, InitialStack, Unit](UpdateForFolderChanged(folderChangedEvent))
+    val res = SeriesDbFlow.runWithInMemoryStore(program)
 
     val (_, mediaDb: MediaDb) = res.runEval.runList.runState(MediaDb.empty).runWriterUnsafe[String](println(_)).runFuture(10 seconds).run
 
@@ -33,7 +35,7 @@ class SeriesDbFlowTest extends FunSuite {
     val jsonFile = File.newTemporaryFile(prefix = "ts2-test", suffix = "json")
 
     try {
-      val res: Eff[Stack2, Unit] = SeriesDbFlow.run2(folderChangedEvent)(jsonFile)(MediaDb.empty)
+      val res = SeriesDbFlow.runWithDiskStore(folderChangedEvent)(jsonFile)(MediaDb.empty)
 
       res.runEval.runList.runWriterUnsafe[String](println(_)).runFuture(10 seconds).run
 
