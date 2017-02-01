@@ -40,6 +40,8 @@ class Ts2AppActor extends Actor {
 
   private val jsonFile = home / ".ts2" / "db.json"
 
+  private val maxDuration: Duration = 60 seconds
+
   override def receive: Receive = {
 
     case SyncDb(seriesFolder) =>
@@ -57,12 +59,12 @@ class Ts2AppActor extends Actor {
         .transform(HttpOMDbApiInterpreter.interpret)
         .transmorph(FilesOpInterpreter.interpret)
 
-      step2.runEval.runList.runWriterUnsafe[String](log.info).runFuture(30 seconds).run
+      step2.runEval.runList.runWriterUnsafe[String](log.info).runFuture(maxDuration).run
 
     case FolderChangedAction(folderChanged) =>
       val eff: Eff[Stack2, Unit] = SeriesDbFlow.run2(folderChanged)(jsonFile)(MediaDb.empty)
 
-      eff.runEval.runList.runWriterUnsafe[String](log.info).runFuture(30 seconds).run
+      eff.runEval.runList.runWriterUnsafe[String](log.info).runFuture(maxDuration).run
   }
 }
 

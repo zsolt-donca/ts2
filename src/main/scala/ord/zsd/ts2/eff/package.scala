@@ -13,7 +13,7 @@ package object eff {
     *
     * TODO make pull request - this looks like a genuinely useful operation
     */
-  def transmorph[R, U, A, F[_], G[_]](e: Eff[R, A])(interpret: F ~> G)(implicit m: Member.Aux[F, R, U], gu: G |= U) : Eff[U, A] = {
+  def transmorph[R, U, A, F[_], G[_]](e: Eff[R, A])(interpret: F ~> G)(implicit m: Member.Aux[F, R, U], gu: G |= U): Eff[U, A] = {
     translate(e)(new Translate[F, U] {
       override def apply[X](kv: F[X]): Eff[U, X] = {
         send(interpret(kv))
@@ -22,7 +22,7 @@ package object eff {
   }
 
   implicit class TranslatePolyOps[R, A](val e: Eff[R, A]) extends AnyVal {
-    def transmorph[U, F[_], G[_]](interpret: F ~> G)(implicit m: Member.Aux[F, R, U], gu: G |= U) : Eff[U, A] = {
+    def transmorph[U, F[_], G[_]](interpret: F ~> G)(implicit m: Member.Aux[F, R, U], gu: G |= U): Eff[U, A] = {
       eff.transmorph(e)(interpret)
     }
   }
