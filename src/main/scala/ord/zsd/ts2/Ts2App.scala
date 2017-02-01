@@ -47,7 +47,7 @@ object Ts2App extends App {
     }
   }
 
-  private val bindingFuture = Http().bindAndHandle(route, "localhost", 8081)
+  private val bindingFuture = Http().bindAndHandle(route, "0.0.0.0", 8081)
 
   Runtime.getRuntime.addShutdownHook(new Thread(
     new Runnable {
